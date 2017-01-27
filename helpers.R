@@ -17,6 +17,7 @@ function(lwr, upr) {
   optim(c(1, 1), f, target = c(lwr, upr))
 }
 
+
 ##
 ## RESIDUAL LIFE EXPECTANCY
 ##
@@ -46,6 +47,7 @@ function(x, le = c("gbd", "who")) {
   approx(age, LE, x)$y
 }
 
+
 ##
 ## BURDEN
 ##
@@ -63,3 +65,56 @@ function(N, DW, A, L, K, r, a) {
   N * DW * integrate(f, lower = A, upper = A + L, K = K, r = r, a = a)$value
 }
 
+
+###
+### SENSITIVITY ANALYSIS FUNCTIONS
+###
+
+## partial correlation coefficients
+sa_pcc <-
+function(y, x) {
+  out <- matrix(ncol = 2, nrow = ncol(x))
+  colnames(out) <- c("rho", "p")
+  rownames(out) <- colnames(x)
+
+  for (i in seq(ncol(x))){
+    lm_y <- lm(y ~ x[, -i])      # regress y to other x's
+    lm_x <- lm(x[, i] ~ x[, -i]) # regress x to other x's
+    out[i, ] <-
+      unlist(cor.test(lm_y$residuals, lm_x$residuals)[4:3],
+             use.names = FALSE)
+  }
+
+  return(out[order(abs(out[, "rho"]), decreasing = TRUE), ])
+}
+
+## ggplot2 tornado graph
+tornado <-
+function(coef, names = NULL) {
+  ## copy names if needed
+  if (is.null(names)) names <- rownames(coef)
+
+  ## create data frame
+  df <- data.frame(est = coef[, "rho"],
+                   order = order(abs(coef[, "rho"])),
+                   name = names)
+
+  ## sort data frame
+  df <- df[df$order, ]
+
+  ## create ggplot
+  ggplot(df, aes(x = order, y = est)) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    scale_x_continuous(element_blank(),
+                       breaks = seq(nrow(df)),
+                       labels = df$name) +
+    scale_y_continuous("partial correlation coefficient",
+                       limits = c(min(0, min(df$est) - 0.1),
+                                  max(0, max(df$est) + 0.1))) +
+    geom_text(aes(x = order, y = est, label = formatC(est, 3, form = "f")),
+              size = 3,
+              hjust = ifelse(df$est > 0, -0.1, 1.1),
+              vjust = 0.4) +
+    theme_bw()
+}
