@@ -85,36 +85,42 @@ function(y, x) {
              use.names = FALSE)
   }
 
-  return(out[order(abs(out[, "rho"]), decreasing = TRUE), ])
+  return(out)
 }
 
 ## ggplot2 tornado graph
 tornado <-
-function(coef, names = NULL) {
+function(coef, names = NULL, p = 1) {
   ## copy names if needed
   if (is.null(names)) names <- rownames(coef)
 
   ## create data frame
   df <- data.frame(est = coef[, "rho"],
-                   order = order(abs(coef[, "rho"])),
-                   name = names)
+                   lab = names)
+
+  ## subset dataframe based on P value
+  df <- subset(df, coef[, "p"] < p)
 
   ## sort data frame
-  df <- df[df$order, ]
+  df <- df[order(abs(df$est)), ]
+
+  ## add id
+  df$id <- seq(nrow(df))
 
   ## create ggplot
-  ggplot(df, aes(x = order, y = est)) +
+  ggplot(df, aes(x = id, y = est)) +
     geom_bar(stat = "identity") +
     coord_flip() +
     scale_x_continuous(element_blank(),
                        breaks = seq(nrow(df)),
-                       labels = df$name) +
+                       labels = df$lab) +
     scale_y_continuous("partial correlation coefficient",
                        limits = c(min(0, min(df$est) - 0.1),
                                   max(0, max(df$est) + 0.1))) +
-    geom_text(aes(x = order, y = est, label = formatC(est, 3, form = "f")),
+    geom_text(aes(x = id, y = est, label = formatC(est, 3, form = "f")),
               size = 3,
               hjust = ifelse(df$est > 0, -0.1, 1.1),
               vjust = 0.4) +
-    theme_bw()
+    theme_bw() +
+    theme(panel.grid.minor = element_blank())
 }
