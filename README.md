@@ -11,7 +11,7 @@ Code for "The socioeconomic impact of _Taenia solium_ cysticercosis in Mozambiqu
 </tr>
 <tr>
 <td><code>helpers.R</code></td>
-<td>helper functions; fit gamma, residual life expectancy, burden calculation</td>
+<td>helper functions</td>
 </tr>
 <tr>
 <td><code>tsol-moz-daly.R</code></td>
